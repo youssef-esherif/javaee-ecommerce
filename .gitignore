@@ -1,4 +1,2 @@
 *.war
 web/WEB-INF/classes/
-web/WEB-INF/lib/*.jar
-libs/*.jar
