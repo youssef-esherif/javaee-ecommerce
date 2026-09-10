@@ -1,35 +1,55 @@
 services:
   db:
-    image: postgres:16
+    image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: ecommerce-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce_pass
-      POSTGRES_DB: ecommerce_db
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Ecommerce_Pass1!"
+      MSSQL_PID: "Developer"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mssqldata:/var/opt/mssql
     ports:
-      - "5432:5432"
+      - "1433:1433"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ecommerce -d ecommerce_db"]
-      interval: 5s
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 20s
+
+  # SQL Server doesn't auto-create a database from an env var the way
+  # postgres does, so this one-shot service creates it once the server
+  # is healthy, then exits. The app waits for it to finish successfully.
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ecommerce-db-init
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: "Ecommerce_Pass1!"
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+      - >
+        /opt/mssql-tools18/bin/sqlcmd -S db -U sa -P "$$MSSQL_SA_PASSWORD" -C
+        -Q "IF DB_ID('ecommerce_db') IS NULL CREATE DATABASE ecommerce_db"
+    restart: "no"
 
   app:
     build: .
     container_name: ecommerce-app
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     environment:
-      DB_URL: jdbc:postgresql://db:5432/ecommerce_db
-      DB_USER: ecommerce
-      DB_PASSWORD: ecommerce_pass
+      DB_URL: "jdbc:sqlserver://db:1433;databaseName=ecommerce_db;encrypt=true;trustServerCertificate=true"
+      DB_USER: sa
+      DB_PASSWORD: "Ecommerce_Pass1!"
     ports:
       - "8080:8080"
 
 volumes:
-  pgdata:
+  mssqldata:
