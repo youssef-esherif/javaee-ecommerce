@@ -13,10 +13,27 @@ import java.sql.SQLException;
  *   DB_PASSWORD e.g. Ecommerce_Pass1!
  *
  * Requires the mssql-jdbc driver jar in web/WEB-INF/lib (see README).
- * The driver registers itself automatically (JDBC 4+ service loader),
- * so no Class.forName() call is needed.
+ *
+ * NOTE: the driver is loaded explicitly below via Class.forName(), rather
+ * than relying on JDBC 4+ automatic service-loader registration. Tomcat's
+ * built-in memory-leak-prevention listener triggers DriverManager's
+ * one-time driver scan very early during server startup, before this
+ * webapp's WEB-INF/lib jars are visible - so automatic registration
+ * silently fails to pick up drivers that only live in a webapp's own
+ * lib folder. Explicitly loading the class here forces it to register
+ * itself (its static initializer calls DriverManager.registerDriver()),
+ * independent of that early scan.
  */
 public class DbConnection {
+
+    static {
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError(
+                    "mssql-jdbc driver not found on classpath - check web/WEB-INF/lib. " + e);
+        }
+    }
 
     public static Connection get() throws SQLException {
         String url = System.getenv("DB_URL");
