@@ -14,7 +14,7 @@ services:
       - mssqldata:/var/opt/mssql
 
     ports:
-      - "1433:1433"
+      - "14330:1433"
 
   db-init:
     build:
