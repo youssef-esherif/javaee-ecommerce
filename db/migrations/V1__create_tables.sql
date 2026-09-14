@@ -1,61 +1,51 @@
-Create table [User](
-        id INT identity(1,1) primary key,
-        username Nvarchar(100) unique not null,
-        password Nvarchar(100) not null,
-        role nvarchar(100) not null
+-- Order matters: a table must exist before another table can
+-- add a FOREIGN KEY pointing at it.
+-- Category -> Product -> User -> Customer -> Order -> Order_item
+
+CREATE TABLE [Category](
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name NVARCHAR(100) UNIQUE NOT NULL,
+    description NVARCHAR(100) NOT NULL
 );
 
-
-Create table Customer(
-
-        id INT identity(1,1) primary key,
-        name Nvarchar(100) unique not null,
-        email Nvarchar(100) not null,
-        address nvarchar(100) not null,
-        phone nvarchar(100) not null,
-        user_id int foreign key references [User](id)
-
-
-
+CREATE TABLE [Product](
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name NVARCHAR(100) UNIQUE NOT NULL,
+    price DECIMAL NOT NULL,
+    stock INT NOT NULL,
+    description NVARCHAR(100) NOT NULL,
+    image NVARCHAR(100) NOT NULL,
+    category_id INT FOREIGN KEY REFERENCES [Category](id)
 );
 
-Create table [Order](
+CREATE TABLE [User](
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    username NVARCHAR(100) UNIQUE NOT NULL,
+    password NVARCHAR(100) NOT NULL,
+    role NVARCHAR(100) NOT NULL
+);
 
+CREATE TABLE [Customer](
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name NVARCHAR(100) UNIQUE NOT NULL,
+    email NVARCHAR(100) NOT NULL,
+    address NVARCHAR(100) NOT NULL,
+    phone NVARCHAR(100) NOT NULL,
+    user_id INT FOREIGN KEY REFERENCES [User](id)
+);
 
-        id INT identity(1,1) primary key,
-        status Nvarchar(100) unique not null,
-        order_Date date not null,
-        total_amount decimal not null,
-        customer_id int foreign key references [customer](id)
-)
+CREATE TABLE [Order](
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    status NVARCHAR(100) NOT NULL,
+    order_date DATE NOT NULL,
+    total_amount DECIMAL NOT NULL,
+    customer_id INT FOREIGN KEY REFERENCES [Customer](id)
+);
 
-Create table [Order_item](
-
-
-        id INT identity(1,1) primary key,
-        price decimal not null,
-        quantity int  not null,
-        order_id int foreign key references [Order](id),
-        product_id int foreign key references [Product](id)
-)
-
-
-
-Create table [Product](
-
-        id INT identity(1,1) primary key,
-        name Nvarchar(100) unique not null,
-        price decimal not null,
-        stock int not null,
-        description nvarchar(100) not null,
-        image nvarchar(100) not null,
-        category_id int foreign key references [Category](id)
-
-)
-
-Create table [Category](
-
-        id INT identity(1,1) primary key,
-        name Nvarchar(100) unique not null,
-        description nvarchar(100) not null
-)
+CREATE TABLE [Order_item](
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    price DECIMAL NOT NULL,
+    quantity INT NOT NULL,
+    order_id INT FOREIGN KEY REFERENCES [Order](id),
+    product_id INT FOREIGN KEY REFERENCES [Product](id)
+);
